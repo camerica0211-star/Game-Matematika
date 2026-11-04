@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Petualangan Bilangan Bulat – Game Matematika TKA C4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#2b2d7e;--bg2:#1f2162;--sun:#ffd23f;--coral:#ff5d8f;--mint:#3ddc97;--ink:#16174a;--card:#ffffff;--mute:#6b6da8}
+*{box-sizing:border-box;margin:0}
+body{font-family:'Baloo 2',system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;
+background-image:linear-gradient(var(--bg2) 2px,transparent 2px),linear-gradient(90deg,var(--bg2) 2px,transparent 2px);background-size:40px 40px}
+#app{max-width:720px;margin:0 auto;padding:16px 14px 40px}
+h1{font-size:clamp(2rem,7vw,3.2rem);line-height:1;color:var(--sun);text-shadow:4px 4px 0 var(--coral)}
+.sub{color:#dfe0ff;margin-top:10px;font-size:1.05rem}
+.line{display:flex;justify-content:space-between;margin:22px 0 6px;color:var(--sun);font-weight:800}
+.line span{width:2.2em;text-align:center}
+.card{background:var(--card);border:4px solid var(--ink);border-radius:18px;box-shadow:6px 6px 0 var(--ink);padding:16px;margin-top:16px}
+.lvl{display:flex;gap:14px;align-items:center;cursor:pointer;width:100%;text-align:left;font:inherit;color:inherit}
+.lvl:hover:not(:disabled){transform:translate(-2px,-2px);box-shadow:8px 8px 0 var(--ink)}
+.lvl:disabled{opacity:.55;cursor:not-allowed}
+.lvl .ic{font-size:2.6rem}.lvl b{font-size:1.3rem;display:block}.lvl small{color:var(--mute);font-size:.95rem;line-height:1.2;display:block}
+.btn{font:inherit;font-weight:800;font-size:1.15rem;background:var(--sun);color:var(--ink);border:4px solid var(--ink);border-radius:14px;padding:8px 22px;box-shadow:4px 4px 0 var(--ink);cursor:pointer}
+.btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.btn.alt{background:#fff}
+.hud{display:flex;justify-content:space-between;align-items:center;color:#fff;font-weight:800;font-size:1.1rem;gap:8px;flex-wrap:wrap}
+.hud .pill{background:var(--ink);border-radius:99px;padding:2px 14px}
+.timer{height:12px;background:var(--ink);border-radius:9px;margin:8px 0;overflow:hidden}
+.timer i{display:block;height:100%;background:var(--mint);width:100%;transition:width 1s linear,background .3s}
+.stage{background:#9fe3ff;border:4px solid var(--ink);border-radius:18px;height:130px;position:relative;overflow:hidden;box-shadow:6px 6px 0 var(--ink)}
+.stage.boss{background:#3b1d6e}
+.floor{position:absolute;bottom:0;left:0;right:0;height:26px;background:var(--ink)}
+.hero{position:absolute;bottom:26px;font-size:2.6rem;transition:left .7s cubic-bezier(.3,1.5,.5,1)}
+.goal{position:absolute;right:10px;bottom:26px;font-size:2.6rem}
+.mark{position:absolute;bottom:2px;font-size:.8rem;color:var(--sun);font-weight:800;transform:translateX(-50%)}
+.bossE{position:absolute;right:16px;bottom:26px;font-size:4rem;transition:transform .2s}
+.bossE.hit{animation:shake .45s}
+.hp{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:70%;height:16px;background:var(--ink);border:3px solid #fff;border-radius:9px;overflow:hidden}
+.hp i{display:block;height:100%;background:var(--coral);transition:width .5s}
+.hpt{position:absolute;top:30px;width:100%;text-align:center;color:#fff;font-size:.85rem;font-weight:700}
+.q{font-size:1.2rem;font-weight:700;line-height:1.3}
+.tag{display:inline-block;background:var(--coral);color:#fff;border-radius:8px;padding:0 10px;font-size:.85rem;margin-bottom:6px}
+.opts{display:grid;gap:10px;margin-top:14px}
+.opt{font:inherit;font-weight:700;font-size:1.1rem;text-align:left;background:#eef0ff;border:3px solid var(--ink);border-radius:12px;padding:10px 14px;cursor:pointer;box-shadow:3px 3px 0 var(--ink)}
+.opt:hover:not(:disabled){background:var(--sun)}
+.opt.ok{background:var(--mint)}.opt.no{background:var(--coral);color:#fff}
+.opt:disabled{cursor:default}
+.fb{margin-top:14px;padding:12px;border-radius:12px;background:#fff7d6;border:3px dashed var(--ink);font-size:1rem;line-height:1.35}
+.big{font-size:4rem;text-align:center}
+.stars{font-size:2.4rem;text-align:center;letter-spacing:4px}
+.center{text-align:center}
+.row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+.flash{animation:shake .45s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+button:focus-visible{outline:4px solid var(--coral);outline-offset:2px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ---------- Bank soal: opsi pertama = jawaban benar (diacak saat main) ----------
+const LEVELS=[
+{id:1,icon:"🛗",name:"Ekspedisi Lift Misteri",desc:"Antar lift mencapai puncak! 3 nyawa, 8 soal analisis kontekstual.",time:40,
+q:[
+["Lift & basement","Rani naik lift dari lantai 3. Lift turun 5 lantai, naik 2 lantai, lalu turun 4 lantai. Rani akhirnya berada di…",["Basement 4 (−4)","Basement 2 (−2)","Lantai dasar (0)","Lantai 4"],"3 − 5 = −2; −2 + 2 = 0; 0 − 4 = −4. Jadi Rani di lantai −4 (basement 4)."],
+["Suhu","Freezer A bersuhu −8°C, kulkas B −3°C, ruang makan C 2°C. Selisih suhu tertinggi dan terendah adalah…",["10°C","6°C","11°C","5°C"],"Selisih = 2 − (−8) = 2 + 8 = 10°C."],
+["Analisis kesalahan","Budi menulis: −7 − (−4) = −11. Analisis yang tepat adalah…",["Salah; −(−4) menjadi +4 sehingga hasilnya −3","Benar; dua tanda negatif dijumlahkan","Salah; hasilnya 11","Salah; hasilnya 3"],"−7 − (−4) = −7 + 4 = −3. Mengurangi bilangan negatif sama dengan menambah bilangan positif."],
+["Penyelam","Penyelam berada di kedalaman −12 m. Ia naik 5 m tiap menit selama 2 menit, lalu turun 3 m pada menit ketiga. Posisinya sekarang…",["−5 m","−10 m","−20 m","1 m"],"−12 + 5 + 5 − 3 = −5 m."],
+["Urutan bilangan","Dari bilangan −9, 4, −2, 0, −15, bilangan terkecil ke-2 dan terbesar ke-2 berturut-turut adalah…",["−9 dan 0","−15 dan 4","−9 dan −2","−2 dan 0"],"Urutan: −15 < −9 < −2 < 0 < 4. Terkecil ke-2 = −9, terbesar ke-2 = 0."],
+["Toko","Untung/rugi toko (ribuan rupiah): Senin +45, Selasa −70, Rabu −20. Agar total empat hari menjadi untung 15, pada Kamis toko harus…",["untung 60","untung 15","untung 30","untung 45"],"Total 3 hari = 45 − 70 − 20 = −45. Misal Kamis x: −45 + x = 15, maka x = 60."],
+["Skor ujian","Ujian 20 soal: benar +3, salah −2, kosong 0. Dina: 14 benar, 6 salah. Eko: 12 benar, 2 salah, 6 kosong. Pernyataan yang benar…",["Eko lebih tinggi 2 poin","Dina lebih tinggi 2 poin","Skor mereka sama","Eko lebih tinggi 6 poin"],"Dina: 42 − 12 = 30. Eko: 36 − 4 = 32. Eko unggul 2 poin."],
+["Pola","Pola bilangan: −5, −2, 1, 4, … Bilangan ke-10 adalah…",["22","19","25","16"],"Beda = +3. U10 = −5 + 9 × 3 = 22."]
+]},
+{id:2,icon:"🐲",name:"Duel Raja Minus",desc:"Kalahkan naga dengan 6 serangan tepat. Soal lebih dalam, waktu lebih ketat!",time:50,
+q:[
+["Evaluasi pernyataan","Diketahui a = −6 dan b = −3. Pernyataan yang benar adalah…",["a − b = −3","a + b = −3","a : b = −2","a × b = −18"],"a − b = −6 + 3 = −3 ✔. Lainnya salah: a + b = −9, a : b = 2, a × b = 18."],
+["Operasi campuran","Hasil dari 8 + (−3) × 4 − (−6) ÷ 2 adalah…",["−1","13","5","−13"],"Kali/bagi dulu: (−3)×4 = −12 dan (−6)÷2 = −3. Lalu 8 − 12 − (−3) = 8 − 12 + 3 = −1."],
+["Letak kesalahan","Siswa menghitung −3 × (4 − 7) = −12 − 21 = −33. Letak kesalahannya adalah…",["(−3) × (−7) seharusnya +21, bukan −21","Kurung harus dihitung terakhir","4 − 7 seharusnya bernilai 3","Hasil akhir yang benar −9"],"Negatif × negatif = positif. Benar: −3 × (−3) = 9, atau −12 + 21 = 9."],
+["Teka-teki","Hasil kali dua bilangan bulat adalah −24 dan jumlahnya −2. Selisih bilangan terbesar dan terkecil (besar − kecil) adalah…",["10","2","8","14"],"Bilangannya −6 dan 4 (−6 × 4 = −24; −6 + 4 = −2). Selisih = 4 − (−6) = 10."],
+["Rata-rata suhu","Suhu 5 kota: −6, 3, −9, 0, dan 7 (°C). Suhu kota keenam agar rata-rata 6 kota menjadi −2°C adalah…",["−7°C","−5°C","−2°C","7°C"],"Jumlah 5 kota = −5. Target jumlah = 6 × (−2) = −12. Kota keenam = −12 − (−5) = −7°C."],
+["Penalaran","Diketahui a < 0, b > 0, dan |a| > |b|. Pernyataan yang PASTI benar adalah…",["a + b < 0","a + b > 0","a × b > 0","a − b > 0"],"a negatif dengan nilai mutlak lebih besar, maka a + b negatif. Juga a × b < 0 dan a − b < 0."],
+["Bilangan berurutan","Tiga bilangan bulat berurutan berjumlah −21. Hasil kali bilangan terkecil dan terbesarnya adalah…",["48","−48","56","42"],"Bilangannya −8, −7, −6 (jumlah −21). Hasil kali (−8) × (−6) = 48."],
+["Gunung","Suhu turun 4°C setiap naik 1.000 m. Di kaki gunung 15°C dan di puncak −13°C. Tinggi puncak dari kaki gunung adalah…",["7.000 m","6.000 m","3.500 m","8.000 m"],"Penurunan = 15 − (−13) = 28°C. 28 ÷ 4 = 7 kali, sehingga 7 × 1.000 = 7.000 m."]
+]}];
+
+// ---------- Utilitas ----------
+const $=s=>document.querySelector(s), app=$("#app");
+let prog={l1:0,l2:0}; try{prog=Object.assign(prog,JSON.parse(localStorage.getItem("bb_prog")||"{}"))}catch(e){}
+const save=()=>{try{localStorage.setItem("bb_prog",JSON.stringify(prog))}catch(e){}};
+let mute=false,ac;
+function beep(f,d=.15,type="square"){if(mute)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;g.gain.value=.06;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+const good=()=>{beep(660,.1);setTimeout(()=>beep(880,.15),100)}, bad=()=>{beep(180,.35,"sawtooth")};
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const stars=n=>"⭐".repeat(n)+"☆".repeat(3-n);
+
+// ---------- Layar beranda ----------
+function home(){
+  clearInterval(S.timer);
+  let ticks="";for(let i=-5;i<=5;i++)ticks+=`<span>${i<0?"−"+(-i):i}</span>`;
+  app.innerHTML=`
+  <h1>Petualangan<br>Bilangan Bulat</h1>
+  <p class="sub">Jawab soal analisis (C4) dengan cepat dan teliti. Kalau waktu habis atau salah, nyawa berkurang!</p>
+  <div class="line" aria-hidden="true">${ticks}</div>
+  <button class="card lvl" onclick="start(0)"><span class="ic">${LEVELS[0].icon}</span><span><b>Level 1: ${LEVELS[0].name}</b><small>${LEVELS[0].desc}</small><small>Bintang: ${stars(prog.l1)}</small></span></button>
+  <button class="card lvl" onclick="start(1)" ${prog.l1?"":"disabled"}><span class="ic">${prog.l1?LEVELS[1].icon:"🔒"}</span><span><b>Level 2: ${LEVELS[1].name}</b><small>${prog.l1?LEVELS[1].desc:"Selesaikan Level 1 untuk membuka."}</small><small>Bintang: ${stars(prog.l2)}</small></span></button>
+  <div class="row"><button class="btn alt" onclick="mute=!mute;this.textContent=mute?'🔇 Suara mati':'🔊 Suara nyala'">${mute?"🔇 Suara mati":"🔊 Suara nyala"}</button></div>`;
+}
+
+// ---------- Permainan ----------
+let S={};
+function start(li){
+  const L=LEVELS[li];
+  S={li,L,qs:shuffle(L.q),i:0,hearts:3,score:0,streak:0,ok:0,left:L.time,boss:100,timer:null,done:false};
+  show();
+}
+function stage(){
+  const {li,ok,boss}=S;
+  if(li===0){
+    let m="";[0,2,4,6,8].forEach(n=>m+=`<span class="mark" style="left:${6+n*10.5}%">${n*1}</span>`);
+    return `<div class="stage"><div class="floor"></div>${m}<div class="goal">🏁</div><div class="hero" id="hero" style="left:${4+ok*10.5}%">🛗</div></div>`;
+  }
+  return `<div class="stage boss"><div class="hp"><i id="hpb" style="width:${boss}%"></i></div><div class="hpt">HP Raja Minus: <span id="hpn">${boss}</span></div><div class="floor"></div><div class="hero" style="left:6%">🦸</div><div class="bossE" id="boss">🐲</div></div>`;
+}
+function show(){
+  clearInterval(S.timer);
+  const {L,i,qs}=S, q=qs[i];
+  const opts=shuffle(q[2].map((t,k)=>({t,c:k===0})));
+  S.opts=opts;S.left=L.time;S.done=false;
+  app.innerHTML=`
+  <div class="hud"><span class="pill">${"❤️".repeat(S.hearts)}${"🖤".repeat(3-S.hearts)}</span><span class="pill">Soal ${i+1}/8</span><span class="pill">🔥 ${S.streak}</span><span class="pill">⭐ ${S.score}</span></div>
+  <div class="timer"><i id="tb"></i></div>
+  ${stage()}
+  <div class="card" id="qc"><span class="tag">${q[0]}</span><p class="q">${q[1]}</p>
+  <div class="opts">${opts.map((o,k)=>`<button class="opt" onclick="ans(${k})">${o.t}</button>`).join("")}</div>
+  <div id="fb"></div></div>`;
+  const tb=$("#tb");tb.style.transition="none";tb.style.width="100%";
+  S.timer=setInterval(()=>{S.left--;tb.style.transition="width 1s linear,background .3s";tb.style.width=(S.left/S.L.time*100)+"%";if(S.left<=10)tb.style.background="var(--coral)";if(S.left<=0)ans(-1)},1000);
+  requestAnimationFrame(()=>{tb.style.width=((S.left-1)/S.L.time*100)+"%"});
+}
+function ans(k){
+  if(S.done)return;S.done=true;clearInterval(S.timer);
+  const q=S.qs[S.i],right=k>=0&&S.opts[k].c;
+  document.querySelectorAll(".opt").forEach((b,j)=>{b.disabled=true;if(S.opts[j].c)b.classList.add("ok");else if(j===k)b.classList.add("no")});
+  let msg;
+  if(right){
+    S.streak++;S.ok++;const gain=100+S.left*2+(S.streak-1)*10;S.score+=gain;good();
+    msg=`<b>🎉 Tepat! +${gain} poin${S.streak>1?" (kombo x"+S.streak+")":""}</b>`;
+    if(S.li===0){const h=$("#hero");if(h)h.style.left=(4+S.ok*10.5)+"%"}
+    else{S.boss=Math.max(0,S.boss-17);const b=$("#boss");b.classList.add("hit");$("#hpb").style.width=S.boss+"%";$("#hpn").textContent=S.boss}
+  }else{
+    S.streak=0;S.hearts--;bad();$("#app").classList.add("flash");setTimeout(()=>$("#app").classList.remove("flash"),500);
+    msg=`<b>${k<0?"⏰ Waktu habis!":"💥 Belum tepat."} Nyawa −1</b>`;
+  }
+  const end=S.hearts<=0||S.i===7||(S.li===1&&S.boss<=0);
+  $("#fb").innerHTML=`<div class="fb">${msg}<br>${q[3]}</div><div class="row"><button class="btn" onclick="${end?"finish()":"next()"}">${end?"Lihat hasil":"Lanjut ▶"}</button></div>`;
+  $("#fb").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function next(){S.i++;show()}
+function finish(){
+  const win=S.hearts>0&&(S.li===0||S.boss<=0), st=win?Math.max(1,S.hearts):0;
+  if(win){const key=S.li?"l2":"l1";prog[key]=Math.max(prog[key],st);save()}
+  app.innerHTML=`<div class="card center">
+  <div class="big">${win?(S.li?"🏆":"🏁"):"😵"}</div>
+  <h1 style="font-size:2rem;color:var(--ink);text-shadow:none;margin:6px 0">${win?(S.li?"Raja Minus Kalah!":"Puncak Tercapai!"):"Misi Gagal"}</h1>
+  ${win?`<div class="stars">${stars(st)}</div>`:""}
+  <p>Jawaban benar: <b>${S.ok}</b> dari ${S.i+1} soal · Skor: <b>${S.score}</b></p>
+  <p style="margin-top:8px">${win?"Hebat! Kamu mampu menganalisis operasi bilangan bulat dengan teliti.":"Jangan menyerah! Baca pembahasan tiap soal dengan teliti, lalu coba lagi."}</p>
+  <div class="row"><button class="btn" onclick="start(${S.li})">🔁 Main lagi</button>
+  ${win&&S.li===0?`<button class="btn" onclick="start(1)">Level 2 ▶</button>`:""}
+  <button class="btn alt" onclick="home()">🏠 Menu</button></div></div>`;
+}
+home();
+</script>
+</body>
+</html>
